@@ -1,0 +1,2 @@
+移动端图片上传解决方案localResizeIMG先压缩后ajax无刷新上传
+并实现跨域上传文件使用h5的formData
