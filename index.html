@@ -14,91 +14,101 @@
   <input type="file" id="uploadphoto" name="photoupload" value="请点击上传图片"   /> 
 	<img id="img" src=""/>
 </body>
-<script type="text/javascript">
-$(document).ready(function(e) {
-	  /**
-   * 获取blob对象的兼容性写法
-   * @param buffer
-   * @param format
-   * @returns {*}
-   */
-  function getBlob(buffer, format) {
-    try {
-      return new Blob(buffer, {type: format});
-    } catch (e) {
-      var bb = new (window.BlobBuilder || window.WebKitBlobBuilder || window.MSBlobBuilder);
-      buffer.forEach(function(buf) {
-        bb.append(buf);
-      });
-      return bb.getBlob(format);
-    }
-  }
-  $("#uploadphoto").change(function(){
-  	console.log(this.files[0])
-  })
-   $('#uploadphoto').localResizeIMG({
-      width: 150,
-      quality: 1,
-      success: function (result) {
-      	//console.log(result.base64)
-      	var aa=result.base64;
-      	$("#size").text(aa.length)
-      	$("#img").attr("src",result.base64)
-      	
-      			//截取base64后边的主要内容
-      	  	var arr = aa.split(',');
-      	   var type = arr[0].match(/:(.*?);/)[1];//获得图片的类型
+<script type="text/javascript">$(document).ready(function(e) {
+	/**
+	 * 获取blob对象的兼容性写法
+	 * @param buffer
+	 * @param format
+	 * @returns {*}
+	 */
+	function getBlob(buffer, format) {
+		try {
+			return new Blob(buffer, {
+				type: format
+			});
+		} catch(e) {
+			var bb = new(window.BlobBuilder || window.WebKitBlobBuilder || window.MSBlobBuilder);
+			buffer.forEach(function(buf) {
+				bb.append(buf);
+			});
+			return bb.getBlob(format);
+		}
+	}
+	
+	var fileName="";
+	
+	$("#uploadphoto").change(function() {
+		fileName=this.files[0].name;
+	})
+	$('#uploadphoto').localResizeIMG({
+		width: 150,
+		quality: 1,
+		success: function(result) {
+			//console.log(result.base64)
+			var aa = result.base64;
+			$("#size").text(aa.length)
+			$("#img").attr("src", result.base64)
 ////////////////---把base64转化为二进制----//////////////////
-      	var text = window.atob(aa.split(",")[1]);
-		    var buffer = new Uint8Array(text.length);
-		   
-		    var pecent = 0, loop = null;
-		    for (var i = 0; i < text.length; i++) {
-		      buffer[i] = text.charCodeAt(i);
-		    }
-		    var blob = getBlob([buffer], type);
-	////// ///////////////////---把base64转化为二进制----////////////////////////// // /
-		    
-		    //这个方法同样可以把base64转为二进制
-//		    function dataURLtoBlob(dataurl) {
-//						  var arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
-//						    bstr = atob(arr[1]), n = bstr.length, u8arr = new Uint8Array(n);
-//						  while(n--){
-//						    u8arr[n] = bstr.charCodeAt(n);
-//						  }
-//						  return new Blob([u8arr], {type:mime});
-//						}
+		/*	var arr = aa.split(',');//截取base64后边的主要内容
+			var type = arr[0].match(/:(.*?);/)[1]; //获得图片的类型
+		
+			var text = window.atob(aa.split(",")[1]);
+			var buffer = new Uint8Array(text.length);
+			var pecent = 0,
+				loop = null;
+			for(var i = 0; i < text.length; i++) {
+				buffer[i] = text.charCodeAt(i);
+			}
+			var blob = getBlob([buffer], type);*/
+////// ///////////////////---把base64转化为二进制----////////////////////////// // /
+		
+		
+//		这个方法同样可以把base64转为二进制
+		function dataURLtoBlob(dataurl) {
+			var arr = dataurl.split(','),
+				mime = arr[0].match(/:(.*?);/)[1],
+				bstr = atob(arr[1]),
+				n = bstr.length,
+				u8arr = new Uint8Array(n);
+			while(n--) {
+				u8arr[n] = bstr.charCodeAt(n);
+			}
+			return new Blob([u8arr], {
+				type: mime
+			});
+		}
+		/////////////////////////////////////===============================================================
+			//FormData 对象，可以把form中所有表单元素的name与value组成一个queryString，提交到后台。在使用Ajax提交时，使用FormData对象可以减少拼接queryString的工作量。
+			//使用FormData对象
+			//1.创建一个FormData空对象，然后使用append方法添加key/value
+			//[javascript] view plain copy
+			//var formdata = new FormData();  
+			//formdata.append('name','fdipzone');  
+			//formdata.append('gender','male'); 
+			/////////////////////////////////////==============================================================
+			//aa是base64
+			var blob=dataURLtoBlob(aa);
+			var fd = new FormData(); //上边是FormData的介绍
+			fd.append('photoupload', blob,fileName);   //必要时这里需要添加文件的名字 例如：fd.append('photoupload', blob，'kebi.jpg'); 否则后台获取不到文件名字
+			$.ajax({
+				type: "POST",
+				url: "http://119.90.53.231/api_img_search.php",
+				data: fd,
+				contentType: false, //这个一定要写
+				processData: false, //这个也一定要写，不然会报错
+				dataType: "json", //返回类型，有json，text，HTML。这里并没有jsonp格式，如果返回的是jsonp格式,就无法用jsonp实现跨域
+				jsonp: "callback",
+				success: function(data) {
+					console.log(data)
+				},
+				error: function() { //上传失败 
+					alert("error")
+				}
+			});
+		}
+	});
 
-/////////////////////////////////////===============================================================
-//FormData 对象，可以把form中所有表单元素的name与value组成一个queryString，提交到后台。在使用Ajax提交时，使用FormData对象可以减少拼接queryString的工作量。
-//使用FormData对象
-//1.创建一个FormData空对象，然后使用append方法添加key/value
-//[javascript] view plain copy
-//var formdata = new FormData();  
-//formdata.append('name','fdipzone');  
-//formdata.append('gender','male'); 
-/////////////////////////////////////==============================================================
-		    var fd = new FormData();//上边是FormData的介绍
-		   fd.append('photoupload',blob);
-				$.ajax({
-					   type: "POST",
-					   url: "http://119.90.53.231/api_img_search.php",
-					   data: fd,
-	            contentType: false,//这个一定要写
-	            processData: false,//这个也一定要写，不然会报错
-					   dataType:"json",//返回类型，有json，text，HTML。这里并没有jsonp格式，如果返回的是jsonp格式,就无法用jsonp实现跨域
-					   jsonp:"callback",
-					   success:function(data){
-						   	console.log(data)
-					   }, 
-						error:function(){ //上传失败 
-						  	alert("error")
-						}
-				}); 
-      }
-  });
-
-}); 
+});
 
 //
 //var a = ["hello", "world"];
@@ -109,7 +119,6 @@ $(document).ready(function(e) {
 //var a = ["hello", "world"];
 //var myBlob = new Blob(a, { "type" : "text/xml" });
 //var newBlob = myBlob.slice(0, 5);
-//console.log(newBlob);
-</script>
+//console.log(newBlob);</script>
 </body>
 </html>
